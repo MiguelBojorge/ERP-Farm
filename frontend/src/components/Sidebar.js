@@ -6,10 +6,13 @@ const Sidebar = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '🏠', path: '/dashboard' },
     { id: 'cerdos', label: 'Gestión de Cerdos', icon: '🐷', path: '/cerdos' },
-    { id: 'cultivos', label: 'Control Cultivos', icon: '🌽', path: '/cultivos' },
+    { id: 'vacas', label: 'Gestión de Vacas', icon: '🐄', path: '/vacas' },
     { id: 'inventario', label: 'Insumos / Stock', icon: '📦', path: '/inventario' },
+    { id: 'gastos', label: 'Gastos y Consumos', icon: '🌾', path: '/gastos' },
     { id: 'ventas', label: 'Ventas / Clientes', icon: '💰', path: '/ventas' },
-    { id: 'finanzas', label: 'Reportes Finanzas', icon: '📊', path: '/finanzas' },
+    { id: 'finanzas', label: 'Finanzas', icon: '📊', path: '/finanzas' },
+    { id: 'reportes', label: 'Reportes & P&L', icon: '📈', path: '/reportes' },
+    { id: 'usuarios', label: 'Usuarios & Roles', icon: '👥', path: '/usuarios' },
   ];
 
   return (
@@ -25,9 +28,9 @@ const Sidebar = () => {
         <ul>
           {menuItems.map((item) => (
             <li key={item.id} className="sidebar-item">
-              <NavLink 
-                to={item.path} 
-                className={({ isActive }) => 
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
                   isActive ? "sidebar-link active" : "sidebar-link"
                 }
               >

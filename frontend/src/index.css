@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=VT323&family=Outfit:wght@400;500;600;700;800&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --rustic-brown: #5d3a1a;
   --bg-cream: #f9f6e5;
