@@ -18,6 +18,7 @@ async function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, env.jwt.accessSecret);
+    if (payload.type !== 'access') throw new Error('Tipo de token incorrecto');
     const usuario = await Usuario.findByPk(payload.id);
     if (!usuario || !usuario.isActive) {
       return res.status(401).json({ detail: 'Usuario no encontrado o inactivo.' });
@@ -40,7 +41,10 @@ async function attachUserIfPresent(req, res, next) {
 
   try {
     const payload = jwt.verify(token, env.jwt.accessSecret);
-    req.user = await Usuario.findByPk(payload.id);
+    if (payload.type === 'access') {
+      const usuario = await Usuario.findByPk(payload.id);
+      if (usuario && usuario.isActive) req.user = usuario;
+    }
   } catch (error) {
     // Token invalido en modo opcional: se ignora y continua sin usuario.
   }

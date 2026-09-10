@@ -1,13 +1,14 @@
 /**
  * routes/porcinoRoutes.js
  * Migrado del router 'lotes-cerdos' de backend/urls.py.
- * AllowAny en todas las acciones, igual que LoteCerdosViewSet original
- * (ver nota de permisos en routes/usuarioRoutes.js).
+ * El acceso (sesion JWT + rol) se aplica al montar este router en routes/index.js.
  */
 const { Router } = require('express');
+const validateIdParam = require('../middleware/validateId');
 const porcinoController = require('../controllers/porcinoController');
 
 const router = Router();
+router.param('id', validateIdParam);
 
 router.get('/', porcinoController.listar);
 router.get('/:id', porcinoController.obtener);

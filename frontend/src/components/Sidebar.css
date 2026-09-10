@@ -70,3 +70,38 @@
   text-align: center;
   border-top: 1px solid #3d2310;
 }
+
+.sidebar-user {
+  color: #f1e4d1;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-user span {
+  color: #f4b41b;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-actions button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1e4d1;
+  border: 1px solid #3d2310;
+  border-radius: 10px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-actions button:hover {
+  color: #f4b41b;
+  border-color: #f4b41b;
+}

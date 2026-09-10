@@ -6,6 +6,7 @@
 const { DataTypes, Model } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { sequelize } = require('../config/database');
+const env = require('../config/env');
 
 const ROLES = ['ADMIN', 'EMPLEADO', 'CLIENTE'];
 
@@ -13,6 +14,11 @@ class Usuario extends Model {
   /** Compara una contraseña en texto plano contra el hash almacenado. */
   async checkPassword(rawPassword) {
     return bcrypt.compare(rawPassword, this.password);
+  }
+
+  /** true si el hash guardado usa un costo menor al configurado (se re-hashea al iniciar sesion). */
+  needsRehash() {
+    return bcrypt.getRounds(this.password) < env.security.bcryptRounds;
   }
 
   /** Representación segura para respuestas de API (nunca exponer el hash). */
@@ -91,12 +97,12 @@ Usuario.init(
       // Equivalente a Usuario.objects.create_user(): nunca persistir texto plano.
       beforeCreate: async (usuario) => {
         if (usuario.password) {
-          usuario.password = await bcrypt.hash(usuario.password, 10);
+          usuario.password = await bcrypt.hash(usuario.password, env.security.bcryptRounds);
         }
       },
       beforeUpdate: async (usuario) => {
         if (usuario.changed('password')) {
-          usuario.password = await bcrypt.hash(usuario.password, 10);
+          usuario.password = await bcrypt.hash(usuario.password, env.security.bcryptRounds);
         }
       },
     },

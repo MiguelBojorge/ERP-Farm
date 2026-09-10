@@ -2,41 +2,50 @@
  * routes/usuarioRoutes.js
  * Migrado de usuarios/views.py::UsuarioViewSet.
  *
- * NOTA IMPORTANTE: el UsuarioViewSet original en Django tenia
- * `permission_classes = [permissions.AllowAny]` en TODAS sus acciones (list,
- * create, retrieve, update, delete) — y el frontend React (pages/Usuarios.js)
- * nunca implemento una pantalla de login, por lo que jamas obtiene un JWT.
- * Para que el sitio siga funcionando igual que con Django, estas rutas se
- * mantienen abiertas (AllowAny), igual que el original. La infraestructura
- * de JWT (middleware/auth.js, requireRole) queda lista para cuando se
- * agregue una pantalla de login real y se quiera restringir esto.
+ * Gestion de usuarios: solo ADMIN (el control de acceso se aplica al montar
+ * el router en routes/index.js). Ya no existe registro publico: las cuentas
+ * las crea un administrador. El perfil propio vive en GET /api/auth/me.
  */
 const { Router } = require('express');
 const { body } = require('express-validator');
 const usuarioController = require('../controllers/usuarioController');
 const validate = require('../middleware/validate');
+const validateIdParam = require('../middleware/validateId');
+const { Usuario } = require('../models');
+const { passwordFuerte } = require('../helpers/password');
 
 const router = Router();
+router.param('id', validateIdParam);
 
-const validacionUsuario = [
-  body('username').notEmpty(),
-  body('password').isLength({ min: 6 }),
-  body('email').optional({ values: 'falsy' }).isEmail(),
+const reglasComunes = [
+  body('email').optional({ values: 'falsy' }).isEmail().isLength({ max: 254 }),
+  body('firstName').optional().isString().isLength({ max: 150 }),
+  body('lastName').optional().isString().isLength({ max: 150 }),
+  body('telefono').optional({ values: 'falsy' }).isString().isLength({ max: 20 }),
+  body('direccion').optional({ values: 'falsy' }).isString().isLength({ max: 500 }),
+  body('rol').optional().isIn(Usuario.ROLES),
 ];
 
-// Registro publico (equivalente a UsuarioViewSet.registro, AllowAny)
-router.post('/registro', validacionUsuario, validate, usuarioController.registro);
-// Alta desde el panel de administracion (Usuarios.js) — mismo comportamiento,
-// AllowAny, igual que el ViewSet original.
-router.post('/', validacionUsuario, validate, usuarioController.registro);
+const validacionAlta = [
+  body('username')
+    .isString()
+    .trim()
+    .matches(/^[A-Za-z0-9._-]{3,150}$/)
+    .withMessage('El usuario debe tener 3-150 caracteres: letras, numeros, punto, guion o guion bajo.'),
+  body('password').custom(passwordFuerte),
+  ...reglasComunes,
+];
 
+const validacionEdicion = [
+  body('password').optional().custom(passwordFuerte),
+  body('isActive').optional().isBoolean(),
+  ...reglasComunes,
+];
+
+router.post('/', validacionAlta, validate, usuarioController.registro);
 router.get('/', usuarioController.listar);
 router.get('/:id', usuarioController.obtener);
-router.patch('/:id', usuarioController.actualizar);
+router.patch('/:id', validacionEdicion, validate, usuarioController.actualizar);
 router.delete('/:id', usuarioController.eliminar);
-
-// El perfil del usuario autenticado vive en GET /api/auth/me (ver
-// routes/authRoutes.js) — esa es la unica ruta de usuarios que SI exige JWT,
-// igual que MeView en Django.
 
 module.exports = router;

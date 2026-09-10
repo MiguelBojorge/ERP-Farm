@@ -8,6 +8,7 @@
  * ya esten sincronizadas — index.js hace sync() automatico en desarrollo).
  */
 require('dotenv').config();
+const crypto = require('crypto');
 const { sequelize, Usuario, Proveedor, Producto, Cliente } = require('../models');
 const GanadoService = require('../src/services/ganadoService');
 const InventoryService = require('../src/services/inventoryService');
@@ -32,12 +33,22 @@ function addDays(date, days) {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Contrasena inicial: la de la variable de entorno si existe; si no, una
+ * aleatoria que se muestra UNA sola vez en consola (nunca claves fijas en el codigo).
+ */
+function passwordInicial(variableEntorno) {
+  return process.env[variableEntorno] || `${crypto.randomBytes(9).toString('base64url')}a7`;
+}
+
 async function seedUsuarios() {
-  const [admin] = await Usuario.findOrCreate({
+  const credenciales = [];
+  const passAdmin = passwordInicial('SEED_ADMIN_PASSWORD');
+  const [admin, adminNuevo] = await Usuario.findOrCreate({
     where: { username: 'admin' },
     defaults: {
       email: 'admin@fincalaprimavera.com',
-      password: 'admin123',
+      password: passAdmin,
       firstName: 'Administrador',
       lastName: 'Principal',
       rol: 'ADMIN',
@@ -48,11 +59,12 @@ async function seedUsuarios() {
 
   const empleados = [];
   for (let i = 1; i <= 3; i += 1) {
-    const [emp] = await Usuario.findOrCreate({
+    const passEmp = passwordInicial(`SEED_EMPLEADO${i}_PASSWORD`);
+    const [emp, empNuevo] = await Usuario.findOrCreate({
       where: { username: `empleado${i}` },
       defaults: {
         email: `empleado${i}@fincalaprimavera.com`,
-        password: 'emp123',
+        password: passEmp,
         firstName: 'Empleado',
         lastName: `Nº ${i}`,
         rol: 'EMPLEADO',
@@ -60,9 +72,16 @@ async function seedUsuarios() {
       },
     });
     empleados.push(emp);
+    if (empNuevo) credenciales.push({ usuario: emp.username, password: passEmp });
   }
 
+  if (adminNuevo) credenciales.unshift({ usuario: admin.username, password: passAdmin });
+
   console.log('Usuarios creados/verificados.');
+  if (credenciales.length) {
+    console.log('Credenciales iniciales (se muestran solo ahora; cambielas al ingresar):');
+    credenciales.forEach((c) => console.log(`  ${c.usuario}  /  ${c.password}`));
+  }
   return { admin, empleados };
 }
 

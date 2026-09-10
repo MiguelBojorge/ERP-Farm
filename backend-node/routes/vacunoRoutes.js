@@ -1,14 +1,13 @@
 /**
  * routes/vacunoRoutes.js
- * Modulo NUEVO: gestion de ganado bovino (vacas), en reemplazo del antiguo
- * router 'cultivos' de backend/urls.py (agricultura, eliminado). AllowAny
- * en todas las acciones, por consistencia con el resto del API (ver nota de
- * permisos en routes/usuarioRoutes.js).
+ * El acceso (sesion JWT + rol) se aplica al montar este router en routes/index.js.
  */
 const { Router } = require('express');
+const validateIdParam = require('../middleware/validateId');
 const vacunoController = require('../controllers/vacunoController');
 
 const router = Router();
+router.param('id', validateIdParam);
 
 router.get('/', vacunoController.listar);
 router.get('/:id', vacunoController.obtener);

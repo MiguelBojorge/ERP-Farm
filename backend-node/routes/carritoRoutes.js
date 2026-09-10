@@ -1,14 +1,13 @@
 /**
  * routes/carritoRoutes.js
- * Ver nota en controllers/carritoController.js: en Django este recurso
- * existia sin ruta registrada; aqui se expone en /api/carritos, AllowAny
- * por consistencia con el resto del API (ver nota de permisos en
- * routes/usuarioRoutes.js).
+ * El acceso (sesion JWT + rol) se aplica al montar este router en routes/index.js.
  */
 const { Router } = require('express');
+const validateIdParam = require('../middleware/validateId');
 const carritoController = require('../controllers/carritoController');
 
 const router = Router();
+router.param('id', validateIdParam);
 
 router.get('/', carritoController.listar);
 router.get('/:id', carritoController.obtener);

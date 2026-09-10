@@ -218,3 +218,5 @@ backend/venv/
 .venv
 env/
 ENV/
+# Respaldos de la base de datos (contienen datos reales)
+backups/

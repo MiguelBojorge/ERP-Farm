@@ -22,6 +22,8 @@ const apiRoutes = require('./routes');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 const { camelizeRequestBody, snakeCaseResponse } = require('./middleware/caseTransform');
+const sanitizeInput = require('./middleware/sanitize');
+const { apiLimiter } = require('./middleware/rateLimit');
 
 const app = express();
 
@@ -33,8 +35,11 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(apiLimiter);
+// Cuerpos acotados: evita que una peticion enorme consuma memoria del servidor.
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use(sanitizeInput);
 if (env.nodeEnv !== 'test') {
   app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 }

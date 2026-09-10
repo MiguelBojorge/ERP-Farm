@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProductos, getLotes, getVacas, getVentas, createVenta, getClientes, createCliente, API_BASE_URL } from '../services/api';
+import { getProductos, getLotes, getVacas, getVentas, createVenta, getClientes, createCliente, getFacturaPdf } from '../services/api';
 import { ShoppingCart, Package, Beef, Milk, Trash2, Plus, Download, User, UserPlus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -21,6 +21,18 @@ const Ventas = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // La factura exige sesion, asi que se baja con el token y se abre desde memoria.
+  const descargarFactura = async (id) => {
+    try {
+      const res = await getFacturaPdf(id);
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      setMensaje({ type: 'error', text: 'No se pudo descargar la factura.' });
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -316,14 +328,13 @@ const Ventas = () => {
                   <td className="font-bold text-slate-500">{v.metodo_pago}</td>
                   <td className="font-black text-emerald-700">C$ {parseFloat(v.total).toLocaleString()}</td>
                   <td className="text-right">
-                    <a
-                      href={`${API_BASE_URL}ventas/${v.id}/factura`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => descargarFactura(v.id)}
                       className="inline-flex items-center gap-2 bg-[#fdf2e9] hover:bg-[#f5e4d2] border border-[#e2d5c3] text-[#5d3a1a] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                     >
                       <Download size={14} className="text-[#8c7851]" /> Factura PDF
-                    </a>
+                    </button>
                   </td>
                 </tr>
               ))}

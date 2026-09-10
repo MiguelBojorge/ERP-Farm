@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+
+function mensajeDeError(err, porDefecto) {
+  const data = err.response?.data;
+  const detalle = data?.errores?.[0]?.msg || data?.errores?.[0]?.mensaje;
+  return detalle || data?.detail || porDefecto;
+}
 
 export default function Usuarios() {
+  const { user: yo } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
 
   // Form states
@@ -57,7 +65,28 @@ export default function Usuarios() {
       setTelefono('');
       fetchUsuarios();
     } catch (err) {
-      setMensaje({ type: 'error', text: 'Error creando el usuario en el servidor.' });
+      setMensaje({ type: 'error', text: mensajeDeError(err, 'Error creando el usuario en el servidor.') });
+    }
+  };
+
+  const toggleActivo = async (u) => {
+    setMensaje(null);
+    try {
+      await api.patch(`/usuarios/${u.id}/`, { is_active: !u.is_active });
+      fetchUsuarios();
+    } catch (err) {
+      setMensaje({ type: 'error', text: mensajeDeError(err, 'No se pudo cambiar el estado.') });
+    }
+  };
+
+  const eliminarUsuario = async (u) => {
+    if (!window.confirm(`¿Eliminar al usuario @${u.username}? Esta acción no se puede deshacer.`)) return;
+    setMensaje(null);
+    try {
+      await api.delete(`/usuarios/${u.id}/`);
+      fetchUsuarios();
+    } catch (err) {
+      setMensaje({ type: 'error', text: mensajeDeError(err, 'No se pudo eliminar el usuario.') });
     }
   };
 
@@ -111,7 +140,8 @@ export default function Usuarios() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Mín. 8, letras y números"
+                autoComplete="new-password"
                 className="form-input"
               />
             </div>
@@ -195,7 +225,8 @@ export default function Usuarios() {
                   <th>Nombre Completo</th>
                   <th>Correo</th>
                   <th>Rol</th>
-                  <th className="text-right">Estado</th>
+                  <th>Estado</th>
+                  <th className="text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,10 +245,22 @@ export default function Usuarios() {
                         {u.rol}
                       </span>
                     </td>
-                    <td className="text-right">
-                      <span className="health-badge badge-saludable">
-                        Activo
+                    <td>
+                      <span className={`health-badge ${u.is_active ? 'badge-saludable' : 'badge-observacion'}`}>
+                        {u.is_active ? 'Activo' : 'Inactivo'}
                       </span>
+                    </td>
+                    <td className="text-right space-x-2">
+                      {u.id !== yo.id && (
+                        <>
+                          <button type="button" onClick={() => toggleActivo(u)} className="text-xs font-bold text-[#5d3a1a] hover:underline">
+                            {u.is_active ? 'Desactivar' : 'Activar'}
+                          </button>
+                          <button type="button" onClick={() => eliminarUsuario(u)} className="text-xs font-bold text-rose-700 hover:underline">
+                            Eliminar
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

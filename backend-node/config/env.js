@@ -6,6 +6,7 @@
  * separada de la lógica de negocio y de persistencia).
  */
 require('dotenv').config();
+const crypto = require('crypto');
 
 function required(name, fallback) {
   const value = process.env[name] ?? fallback;
@@ -13,6 +14,11 @@ function required(name, fallback) {
     throw new Error(`Falta la variable de entorno requerida: ${name}`);
   }
   return value;
+}
+
+function int(name, fallback) {
+  const parsed = parseInt(process.env[name] || '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 const env = {
@@ -31,8 +37,26 @@ const env = {
   jwt: {
     accessSecret: required('JWT_ACCESS_SECRET', 'dev-access-secret'),
     refreshSecret: required('JWT_REFRESH_SECRET', 'dev-refresh-secret'),
-    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '1d',
+    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '30m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  },
+
+  security: {
+    // Costo de bcrypt (2^N iteraciones). 12 es el minimo recomendado hoy.
+    bcryptRounds: int('BCRYPT_ROUNDS', 12),
+    // Secreto para firmar los tokens CSRF. Si no se define, se deriva del secreto JWT.
+    csrfSecret:
+      process.env.CSRF_SECRET ||
+      crypto
+        .createHash('sha256')
+        .update(`csrf:${process.env.JWT_ACCESS_SECRET || 'dev-access-secret'}`)
+        .digest('hex'),
+    csrfTtlMs: int('CSRF_TTL_MINUTES', 480) * 60 * 1000,
+    // Fuerza bruta: intentos de login fallidos permitidos por IP+usuario en la ventana.
+    loginMaxAttempts: int('LOGIN_MAX_ATTEMPTS', 5),
+    loginWindowMs: int('LOGIN_WINDOW_MINUTES', 15) * 60 * 1000,
+    // Tope general de peticiones por IP.
+    apiMaxRequests: int('API_MAX_REQUESTS_PER_MINUTE', 300),
   },
 
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000')
@@ -40,5 +64,16 @@ const env = {
     .map((origin) => origin.trim())
     .filter(Boolean),
 };
+
+// En produccion no se permite arrancar con secretos por defecto o debiles.
+if (env.nodeEnv === 'production') {
+  const weak = (secret) => !secret || secret.length < 32 || /^(dev-|change)/i.test(secret);
+  if (weak(env.jwt.accessSecret) || weak(env.jwt.refreshSecret)) {
+    throw new Error('JWT_ACCESS_SECRET y JWT_REFRESH_SECRET deben ser aleatorios y de al menos 32 caracteres en produccion.');
+  }
+  if (env.jwt.accessSecret === env.jwt.refreshSecret) {
+    throw new Error('JWT_ACCESS_SECRET y JWT_REFRESH_SECRET deben ser distintos.');
+  }
+}
 
 module.exports = env;
